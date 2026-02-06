@@ -37,9 +37,9 @@ const TEMPLATE = [
     ]]
 ];
 
-export default function Edit({ attributes, setAttributes, clientId }) {
+export default function Edit({ attributes, setAttributes }) {
     const { slides } = attributes;
-    const [currentSlide, setCurrentSlide] = useState(0);
+    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
     const updateSlide = (index, field, value) => {
         const newSlides = [...slides];
@@ -60,7 +60,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
             }
         ];
         setAttributes({ slides: newSlides });
-        setCurrentSlide(newSlides.length - 1);
+        setCurrentSlideIndex(newSlides.length - 1);
     };
 
     const removeSlide = (index) => {
@@ -70,7 +70,7 @@ export default function Edit({ attributes, setAttributes, clientId }) {
         }
         const newSlides = slides.filter((_, i) => i !== index);
         setAttributes({ slides: newSlides });
-        setCurrentSlide(Math.max(0, currentSlide - 1));
+        setCurrentSlideIndex(Math.max(0, index - 1));
     };
 
     const duplicateSlide = (index) => {
@@ -78,11 +78,10 @@ export default function Edit({ attributes, setAttributes, clientId }) {
         const duplicated = { ...slides[index], id: Date.now() };
         newSlides.splice(index + 1, 0, duplicated);
         setAttributes({ slides: newSlides });
-        setCurrentSlide(index + 1);
+        setCurrentSlideIndex(index + 1);
     };
 
-    const slide = slides[currentSlide] || slides[0];
-    const innerBlocksId = `${clientId}-slide-${currentSlide}`;
+    const currentSlide = slides[currentSlideIndex] || slides[0];
 
     return (
         <Fragment>
@@ -90,216 +89,156 @@ export default function Edit({ attributes, setAttributes, clientId }) {
                 <ToolbarGroup>
                     <ToolbarButton
                         icon="align-left"
-                        label={__('Alinear izquierda', 'acemar-blocks')}
-                        isActive={slide.alignment === 'left'}
-                        onClick={() => updateSlide(currentSlide, 'alignment', 'left')}
+                        isActive={currentSlide.alignment === 'left'}
+                        onClick={() => updateSlide(currentSlideIndex, 'alignment', 'left')}
                     />
                     <ToolbarButton
                         icon="align-center"
-                        label={__('Alinear centro', 'acemar-blocks')}
-                        isActive={slide.alignment === 'center'}
-                        onClick={() => updateSlide(currentSlide, 'alignment', 'center')}
+                        isActive={currentSlide.alignment === 'center'}
+                        onClick={() => updateSlide(currentSlideIndex, 'alignment', 'center')}
                     />
                     <ToolbarButton
                         icon="align-right"
-                        label={__('Alinear derecha', 'acemar-blocks')}
-                        isActive={slide.alignment === 'right'}
-                        onClick={() => updateSlide(currentSlide, 'alignment', 'right')}
+                        isActive={currentSlide.alignment === 'right'}
+                        onClick={() => updateSlide(currentSlideIndex, 'alignment', 'right')}
                     />
                 </ToolbarGroup>
             </BlockControls>
 
             <InspectorControls>
-                <PanelBody title={__('Configuración del Slide Actual', 'acemar-blocks')}>
-                    <SelectControl
-                        label={__('Tipo de media', 'acemar-blocks')}
-                        value={slide.mediaType}
-                        options={[
-                            { label: 'Imagen', value: 'image' },
-                            { label: 'Video (YouTube/Vimeo)', value: 'video' }
-                        ]}
-                        onChange={(value) => updateSlide(currentSlide, 'mediaType', value)}
-                    />
+                <PanelBody title={__('Gestionar Slides', 'acemar-blocks')}>
+                    <p style={{ marginBottom: '16px' }}>
+                        <strong>Slide actual: {currentSlideIndex + 1} de {slides.length}</strong>
+                    </p>
 
-                    {slide.mediaType === 'image' ? (
-                        <MediaUploadCheck>
-                            <MediaUpload
-                                onSelect={(media) => {
-                                    updateSlide(currentSlide, 'imageUrl', media.url);
-                                    updateSlide(currentSlide, 'imageId', media.id);
-                                }}
-                                allowedTypes={['image']}
-                                value={slide.imageId}
-                                render={({ open }) => (
-                                    <div style={{ marginBottom: '15px' }}>
-                                        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                            {__('Imagen de fondo', 'acemar-blocks')}
-                                        </label>
-                                        {slide.imageUrl ? (
-                                            <div>
-                                                <img 
-                                                    src={slide.imageUrl} 
-                                                    alt="" 
-                                                    style={{ 
-                                                        maxWidth: '100%', 
-                                                        marginBottom: '10px',
-                                                        borderRadius: '4px'
-                                                    }}
-                                                />
-                                                <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <Button isSecondary onClick={open}>
-                                                        {__('Cambiar imagen', 'acemar-blocks')}
-                                                    </Button>
-                                                    <Button isDestructive onClick={() => {
-                                                        updateSlide(currentSlide, 'imageUrl', '');
-                                                        updateSlide(currentSlide, 'imageId', null);
-                                                    }}>
-                                                        {__('Remover', 'acemar-blocks')}
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <Button isPrimary onClick={open}>
-                                                {__('Seleccionar imagen', 'acemar-blocks')}
-                                            </Button>
-                                        )}
-                                    </div>
-                                )}
-                            />
-                        </MediaUploadCheck>
-                    ) : (
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
-                                {__('URL del video', 'acemar-blocks')}
-                            </label>
-                            <input
-                                type="text"
-                                value={slide.videoUrl}
-                                onChange={(e) => updateSlide(currentSlide, 'videoUrl', e.target.value)}
-                                placeholder="https://www.youtube.com/watch?v=..."
-                                style={{ width: '100%', padding: '8px' }}
-                            />
-                            <p style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-                                {__('YouTube o Vimeo', 'acemar-blocks')}
-                            </p>
-                        </div>
-                    )}
-
-                    <SelectControl
-                        label={__('Alineación del contenido', 'acemar-blocks')}
-                        value={slide.alignment}
-                        options={[
-                            { label: 'Izquierda', value: 'left' },
-                            { label: 'Centro', value: 'center' },
-                            { label: 'Derecha', value: 'right' }
-                        ]}
-                        onChange={(value) => updateSlide(currentSlide, 'alignment', value)}
-                    />
-                </PanelBody>
-
-                <PanelBody title={__('Gestionar Slides', 'acemar-blocks')} initialOpen={false}>
                     <Button 
                         isPrimary 
                         onClick={addSlide}
-                        style={{ marginBottom: '12px', width: '100%' }}
+                        style={{ marginBottom: '8px', width: '100%' }}
                     >
-                        ➕ {__('Agregar Slide', 'acemar-blocks')}
-                    </Button>
-
-                    <Button 
-                        isSecondary 
-                        onClick={() => duplicateSlide(currentSlide)}
-                        style={{ marginBottom: '12px', width: '100%' }}
-                    >
-                        📋 {__('Duplicar Slide Actual', 'acemar-blocks')}
+                        ➕ Agregar Slide
                     </Button>
 
                     {slides.length > 1 && (
                         <Button 
                             isDestructive 
-                            onClick={() => removeSlide(currentSlide)}
-                            style={{ width: '100%' }}
+                            onClick={() => removeSlide(currentSlideIndex)}
+                            style={{ marginBottom: '8px', width: '100%' }}
                         >
-                            🗑️ {__('Eliminar Slide Actual', 'acemar-blocks')}
+                            🗑️ Eliminar Slide
                         </Button>
                     )}
 
                     <hr style={{ margin: '16px 0' }} />
 
-                    <div>
-                        <strong>{__('Todos los slides:', 'acemar-blocks')}</strong>
-                        <div style={{ marginTop: '12px' }}>
-                            {slides.map((s, index) => (
-                                <Button
-                                    key={s.id}
-                                    isSecondary={index !== currentSlide}
-                                    isPrimary={index === currentSlide}
-                                    onClick={() => setCurrentSlide(index)}
-                                    style={{ 
-                                        marginBottom: '4px', 
-                                        width: '100%',
-                                        justifyContent: 'flex-start'
-                                    }}
-                                >
-                                    {index + 1}. Slide {index + 1}
-                                </Button>
-                            ))}
-                        </div>
-                    </div>
+                    <p><strong>Cambiar a:</strong></p>
+                    {slides.map((s, index) => (
+                        <Button
+                            key={s.id}
+                            isSecondary={index !== currentSlideIndex}
+                            isPrimary={index === currentSlideIndex}
+                            onClick={() => setCurrentSlideIndex(index)}
+                            style={{ marginBottom: '4px', width: '100%' }}
+                        >
+                            Slide {index + 1}
+                        </Button>
+                    ))}
+                </PanelBody>
+
+                <PanelBody title={'Configuración - Slide ' + (currentSlideIndex + 1)}>
+                    <SelectControl
+                        label="Tipo de media"
+                        value={currentSlide.mediaType}
+                        options={[
+                            { label: 'Imagen', value: 'image' },
+                            { label: 'Video', value: 'video' }
+                        ]}
+                        onChange={(value) => updateSlide(currentSlideIndex, 'mediaType', value)}
+                    />
+
+                    {currentSlide.mediaType === 'image' ? (
+                        <MediaUploadCheck>
+                            <MediaUpload
+                                onSelect={(media) => {
+                                    updateSlide(currentSlideIndex, 'imageUrl', media.url);
+                                    updateSlide(currentSlideIndex, 'imageId', media.id);
+                                }}
+                                allowedTypes={['image']}
+                                value={currentSlide.imageId}
+                                render={({ open }) => (
+                                    <>
+                                        {currentSlide.imageUrl ? (
+                                            <>
+                                                <img 
+                                                    src={currentSlide.imageUrl} 
+                                                    alt="" 
+                                                    style={{ maxWidth: '100%', marginBottom: '8px', borderRadius: '4px' }}
+                                                />
+                                                <Button isSecondary onClick={open} style={{ marginRight: '8px' }}>
+                                                    Cambiar
+                                                </Button>
+                                                <Button isDestructive onClick={() => {
+                                                    updateSlide(currentSlideIndex, 'imageUrl', '');
+                                                    updateSlide(currentSlideIndex, 'imageId', null);
+                                                }}>
+                                                    Remover
+                                                </Button>
+                                            </>
+                                        ) : (
+                                            <Button isPrimary onClick={open}>
+                                                Seleccionar imagen
+                                            </Button>
+                                        )}
+                                    </>
+                                )}
+                            />
+                        </MediaUploadCheck>
+                    ) : (
+                        <input
+                            type="text"
+                            value={currentSlide.videoUrl || ''}
+                            onChange={(e) => updateSlide(currentSlideIndex, 'videoUrl', e.target.value)}
+                            placeholder="https://www.youtube.com/watch?v=..."
+                            style={{ width: '100%', padding: '8px', marginTop: '8px' }}
+                        />
+                    )}
+
+                    <SelectControl
+                        label="Alineación"
+                        value={currentSlide.alignment}
+                        options={[
+                            { label: 'Izquierda', value: 'left' },
+                            { label: 'Centro', value: 'center' },
+                            { label: 'Derecha', value: 'right' }
+                        ]}
+                        onChange={(value) => updateSlide(currentSlideIndex, 'alignment', value)}
+                    />
                 </PanelBody>
             </InspectorControls>
 
             <div {...useBlockProps({ className: 'acemar-hero-slider-editor' })}>
-                <div className="slide-navigation">
-                    <Button
-                        icon="arrow-left-alt2"
-                        onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
-                        disabled={currentSlide === 0}
-                        style={{ marginRight: '8px' }}
-                    >
-                        {__('Anterior', 'acemar-blocks')}
-                    </Button>
-                    
-                    <span style={{ 
-                        padding: '0 16px', 
-                        fontWeight: '600',
-                        fontSize: '14px'
-                    }}>
-                        Slide {currentSlide + 1} de {slides.length}
-                    </span>
-                    
-                    <Button
-                        icon="arrow-right-alt2"
-                        iconPosition="right"
-                        onClick={() => setCurrentSlide(Math.min(slides.length - 1, currentSlide + 1))}
-                        disabled={currentSlide === slides.length - 1}
-                        style={{ marginLeft: '8px' }}
-                    >
-                        {__('Siguiente', 'acemar-blocks')}
-                    </Button>
+                <div className="editor-info">
+                    🎬 Hero Slider - Editando Slide {currentSlideIndex + 1} de {slides.length}
                 </div>
 
                 <div className="hero-slide-preview">
-                    {slide.mediaType === 'image' && slide.imageUrl && (
+                    {currentSlide.mediaType === 'image' && currentSlide.imageUrl && (
                         <div 
                             className="hero-background"
-                            style={{ backgroundImage: `url(${slide.imageUrl})` }}
+                            style={{ backgroundImage: `url(${currentSlide.imageUrl})` }}
                         />
                     )}
                     
-                    {slide.mediaType === 'video' && slide.videoUrl && (
+                    {currentSlide.mediaType === 'video' && currentSlide.videoUrl && (
                         <div className="hero-video-indicator">
-                            🎥 Video: {slide.videoUrl}
+                            🎥 Video: {currentSlide.videoUrl.substring(0, 50)}...
                         </div>
                     )}
                     
-                    <div className={`hero-content hero-content-${slide.alignment}`}>
+                    <div className={`hero-content hero-content-${currentSlide.alignment}`}>
                         <InnerBlocks
-                            key={innerBlocksId}
                             allowedBlocks={ALLOWED_BLOCKS}
                             template={TEMPLATE}
-                            templateLock={false}
-                            renderAppender={() => <InnerBlocks.ButtonBlockAppender />}
                         />
                     </div>
                 </div>
